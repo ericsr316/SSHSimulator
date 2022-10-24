@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,57 +19,55 @@ import java.util.logging.Logger;
  *
  * @author ericm
  */
-public class Client{
+public class Client {
 
-private Socket client;
-private String ip;
-private int port;
-private ObjectInputStream obin;
-private ObjectOutputStream obout;
-private DataInputStream in;
-private DataOutputStream out;
-private String userName;
-private String pass;
-private User user;
+    private Socket client;
+    private String ip;
+    private int port;
+    private ObjectInputStream obin;
+    private ObjectOutputStream obout;
+    private DataInputStream in;
+    private DataOutputStream out;
+    private String userName;
+    private String pass;
+    private User user;
+    public Scanner sc = new Scanner(System.in);
 
-public Client(){
-   this.user = null;
+    public Client() {
+        this.user = null;
 
-}
+    }
 
+    public void connectToServer() {
 
-    public void connectToServer(){
-       
-       try {
-        client = new Socket(ip,port);
-        typeCredentials();
-        this.user = this.reciveUser();
-        if(user!=null){  
-        System.out.println("Wellcome "+this.user.toString());
-     
+        try {
+            client = new Socket(ip, port);
+            typeCredentials();
+            this.user = this.reciveUser();
+            if (user != null) {
+                System.out.println("Wellcome " + this.user.toString());
+
+            }
+
+        } catch (IOException ex) {
+            System.out.println(ex.getMessage());
         }
-     
-        
-    } catch (IOException ex) {
-        System.out.println(ex.getMessage());
-    }
-        
-      
-    }
-    
-    public void disconnectFromServer(){
-    try {
-        if(this.getClient().isConnected()){
-        this.getClient().close();
-        }
-        else{
-            System.out.println("The is not a conection");
-        }
-    } catch (IOException ex) {
-        ex.printStackTrace();
-    }
+
     }
 
+    /*
+     * public void disconnectFromServer() {
+     * try {
+     * if (this.getClient().isConnected()) {
+     * this.getClient().close();
+     * } else {
+     * System.out.println("The is not a conection");
+     * }
+     * } catch (IOException ex) {
+     * ex.printStackTrace();
+     * }
+     * }
+     */
     public Socket getClient() {
         return client;
     }
@@ -140,36 +139,42 @@ public Client(){
     public void setPass(String pass) {
         this.pass = pass;
     }
-    
-    
 
-     public void typeCredentials(){
- 
-    try {
-        this.setOut(new DataOutputStream(client.getOutputStream()));
-        this.getOut().writeUTF(this.getUserName());
-        this.getOut().flush();
-        this.getOut().writeUTF(this.getPass());
-        this.getOut().flush();
-  
-    } catch (IOException ex) {
-        ex.printStackTrace();
+    public void typeCredentials() {
+
+        try {
+            this.setOut(new DataOutputStream(client.getOutputStream()));
+            this.getOut().writeUTF(this.getUserName());
+            this.getOut().flush();
+            this.getOut().writeUTF(this.getPass());
+            this.getOut().flush();
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
-     }
-     
-     public User reciveUser() throws IOException{
-     User x = new User();
-         try {   
-        this.setIn(new DataInputStream(new BufferedInputStream(this.client.getInputStream())));
-        x.setUserName(this.getIn().readUTF());
-        x.setPass(this.getIn().readUTF());
-        x.setRol(this.getIn().readUTF());
-        this.getIn().close();
-    } catch (IOException ex) {
-             ex.printStackTrace();
-   } 
 
-         return x;
-     }
-    
+    public User reciveUser() throws IOException {
+        User x = new User();
+        try {
+            this.setIn(new DataInputStream(new BufferedInputStream(this.client.getInputStream())));
+            x.setUserName(this.getIn().readUTF());
+            x.setPass(this.getIn().readUTF());
+            x.setRol(this.getIn().readUTF());
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+        return x;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
 }
