@@ -9,6 +9,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.*;
 import java.security.Permissions;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ import java.util.logging.Logger;
  *
  * @author ericm
  */
-public class Server {
+public class Server implements Serializable {
 
     public static final int port = 22;
     private ServerSocket server;
@@ -41,7 +42,8 @@ public class Server {
         try {
             host = InetAddress.getLocalHost();
             this.server = new ServerSocket(22, 0, host);
-            System.out.println("Server has started in " + server.toString());
+            System.out.println("Server has started in " + server.getInetAddress().getHostAddress() + " in port: "
+                    + server.getLocalPort());
             for (;;) {
 
                 this.client.setClient(this.server.accept());
@@ -162,7 +164,8 @@ public class Server {
             pass = this.getIn().readUTF();
             pos = getPosAccount(user, pass);
             if (pos != -1) {
-                System.out.println(this.getUsers().get(pos).toString());
+                System.out.println(this.getUsers().get(pos).getUserName() + " in "
+                        + this.client.getClient().getInetAddress().getHostAddress());
                 this.setUser(this.getUsers().get(pos));
             }
 
@@ -200,4 +203,5 @@ public class Server {
         }
         return pos;
     }
+
 }

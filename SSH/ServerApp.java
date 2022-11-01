@@ -31,9 +31,9 @@ public class ServerApp {
     }
 
     public static void fillUsers() {
-        users.add(new User("root", "12345"));
+        users.add(new User("root", String.valueOf("12345".hashCode())));
         users.get(users.size() - 1).setRol("root");
-        users.add(new User("emmc", "12345"));
+        users.add(new User("emmc", String.valueOf("dino117".hashCode())));
         users.get(users.size() - 1).setRol("user");
     }
 

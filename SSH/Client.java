@@ -44,30 +44,20 @@ public class Client {
             client = new Socket(ip, port);
             typeCredentials();
             this.user = this.reciveUser();
-            if (user != null) {
-                System.out.println("Wellcome " + this.user.toString());
-
-            }
-
         } catch (IOException ex) {
             System.out.println(ex.getMessage());
         }
 
     }
 
-    /*
-     * public void disconnectFromServer() {
-     * try {
-     * if (this.getClient().isConnected()) {
-     * this.getClient().close();
-     * } else {
-     * System.out.println("The is not a conection");
-     * }
-     * } catch (IOException ex) {
-     * ex.printStackTrace();
-     * }
-     * }
-     */
+    public void disconnectFromServer() throws IOException {
+
+        if (this.getClient().isConnected()) {
+            this.getClient().close();
+        }
+
+    }
+
     public Socket getClient() {
         return client;
     }
