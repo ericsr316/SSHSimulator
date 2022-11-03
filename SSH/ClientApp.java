@@ -25,28 +25,15 @@ public class ClientApp implements Serializable {
         client.setPass(String.valueOf(args[2].hashCode()));
 
         for (;;) {
+
+            System.out.print("\033\143");
+
             client.connectToServer();
-            System.out.println("*******All commands aviable*****");
-            System.out.println("*       echo - print a message *");
-            System.out.println("*ifconfig - show network ip    *");
-            System.out.println("*adduser - add a new user      *");
-            System.out.println("*allusers - show all the users aviable (only for root)*");
-            System.out.println("*****exit - left the system******");
+
             client.x = false;
             users = client.users;
             groups = client.groups;
             folders = client.folder;
-
-            for (int i = 0; i < folders.size(); i++) {
-                char permissions[] = folders.get(i).getPermissions();
-                System.out.print("Name: " + folders.get(i).getName() + "; permissions: ");
-                for (int j = 0; j < permissions.length; j++) {
-                    System.out.print(permissions[j] + " ");
-                }
-                System.out.print(";Group: " + folders.get(i).getGroup().getName() + "; Owner: "
-                        + folders.get(i).getOwn().getUserName());
-                System.out.print("\n");
-            }
 
             execution(client);
 
@@ -57,19 +44,22 @@ public class ClientApp implements Serializable {
         String command = "";
 
         System.out.print(c.getClient().getInetAddress().getHostName() + "@" + c.getUser().getUserName() + "~#");
-        command = sc.next();
+        command = sc.nextLine();
 
         switch (command) {
             case "ifconfig": {
                 ifConfig(c);
+                c.x = true;
                 break;
             }
             case "exit": {
                 exitServer(c);
+                c.x = true;
                 break;
             }
             case "echo": {
                 echo();
+                c.x = true;
                 break;
             }
 
@@ -91,13 +81,39 @@ public class ClientApp implements Serializable {
                 break;
             }
 
+            case "mkgroup": {
+                mkgroup(c);
+                c.x = true;
+                break;
+            }
+
+            case "adduxg": {
+                addUserxGroup(c);
+                c.x = true;
+                break;
+            }
+
+            case "ls": {
+                ls();
+                c.x = true;
+                break;
+            }
+
+            case "ls -a": {
+                lall();
+                c.x = true;
+                break;
+            }
+
             case "help": {
                 help();
+                c.x = true;
                 break;
             }
 
             default: {
                 System.out.println("Command not found");
+                c.x = true;
             }
         }
         if (c.x) {
@@ -124,11 +140,23 @@ public class ClientApp implements Serializable {
     }
 
     public static void ls() {
-        System.out.println(folders.size());
         for (int i = 0; i < folders.size(); i++) {
-            System.out.println("/" + folders.get(i).getName() + " ");
+            System.out.print("/" + folders.get(i).getName() + " ");
         }
         System.out.print("\n");
+    }
+
+    public static void lall() {
+        for (int i = 0; i < folders.size(); i++) {
+            char permissions[] = folders.get(i).getPermissions();
+            System.out.print("Name: " + folders.get(i).getName() + "; permissions: ");
+            for (int j = 0; j < permissions.length; j++) {
+                System.out.print(permissions[j] + " ");
+            }
+            System.out.print(";Group: " + folders.get(i).getGroup().getName() + "; Owner: "
+                    + folders.get(i).getOwn().getUserName());
+            System.out.print("\n");
+        }
     }
 
     public static void addUser() {
@@ -146,33 +174,61 @@ public class ClientApp implements Serializable {
     public static void mkdir(Client c) {
         char[] permissions = { 'r', 'w', 'x' };
         String fname;
-        int gid = 0;
+        int gid = -1;
         System.out.print("Type the folder's name: ");
         fname = sc.next();
-        folders.add(new Folder(fname, permissions, c.getUser(), groups.get(0)));
+        for (int i = 0; i < groups.size(); i++) {
+            for (int j = 0; j < groups.get(i).getMembers().size(); j++) {
+                if (c.getUserName().equals(groups.get(i).getMembers().get(j).getUserName())) {
+                    gid = i;
+                    break;
+                }
+            }
+        }
+
+        folders.add(new Folder(fname, permissions, c.getUser(), groups.get(gid)));
 
     }
 
-    /*
-     * public static void su() {
-     * String usu;
-     * String pass;
-     * System.out.print("su: ");
-     * usu = sc.next();
-     * for (int i = 0; i < users.size(); i++) {
-     * if (usu.equals(users.get(i).getUserName())) {
-     * System.out.print("Type your password: ");
-     * pass = String.valueOf(sc.next().hashCode());
-     * if (pass.equals(users.get(i).getPass())) {
-     * System.out.println("Goodbye " + client.getUserName() + " see u later");
-     * client.setUser(users.get(i));
-     * client.sendUser();
-     * break;
-     * }
-     * }
-     * }
-     * }
-     */
+    public static void mkgroup(Client c) {
+        for (int i = 0; i < users.size(); i++) {
+            if (users.get(i).getUserName().equals("root")) {
+                String name = "";
+                System.out.println("Type a name for the new group");
+                name = sc.next();
+                groups.add(new Group(name, new ArrayList<User>()));
+                System.out.println(name + " was created sucefully");
+                break;
+            }
+
+        }
+
+    }
+
+    public static void addUserxGroup(Client c) {
+        String user = "";
+        String group = "";
+        System.out.println("Type a username name");
+        user = sc.next();
+        System.out.println("Type a group name");
+        group = sc.next();
+
+        for (int i = 0; i < groups.size(); i++) {
+            if (group.equals(groups.get(i).getName())) {
+                for (int j = 0; j < users.size(); j++) {
+                    if (user.equals(users.get(j).getUserName())) {
+
+                        groups.get(i).getMembers().add(users.get(j));
+                        System.out.println(groups.get(i).toString());
+
+                        break;
+                    }
+
+                }
+            }
+        }
+    }
+
     public static void allUsers(Client c) {
         if (c.getUser().getRol().equals("root")) {
             for (int i = 0; i < users.size(); i++) {
@@ -187,7 +243,17 @@ public class ClientApp implements Serializable {
     }
 
     public static void help() {
-
+        System.out.println("*******All commands aviable*****");
+        System.out.println("*       echo - print a message *");
+        System.out.println("*ifconfig - show network ip    *");
+        System.out.println("*adduser - add a new user (only for root)     *");
+        System.out.println("*mkgroup - add a new group(for root)     *");
+        System.out.println("*adduxg - add a user to a group (only for root)*");
+        System.out.println("*allusers - show all the users aviable (only for root)*");
+        System.out.println("*ls - list all the directorys*");
+        System.out.println("*ls -a list all the directory's info*");
+        System.out.println("*help - i'm noob so teach me how use this powerfull system");
+        System.out.println("*****exit - left the system******");
     }
 
 }
