@@ -27,6 +27,7 @@ public class ClientApp implements Serializable {
         for (;;) {
 
             System.out.print("\033\143");
+            System.out.flush();
 
             client.connectToServer();
 
