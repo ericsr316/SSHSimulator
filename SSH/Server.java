@@ -13,6 +13,7 @@ import java.io.Serializable;
 import java.net.*;
 import java.security.Permissions;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,7 +42,26 @@ public class Server implements Serializable {
         this.folders = folders;
         client = new Client(false);
         try {
-            host = InetAddress.getLocalHost();
+            if (System.getProperty("os.name").contains("Windows")) {
+                host = InetAddress.getLocalHost();
+            }
+
+            else if (System.getProperty("os.name").contains("Linux")) {
+                Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                while (interfaces.hasMoreElements()) {
+                    NetworkInterface iface = interfaces.nextElement();
+                    // filters out 127.0.0.1 and inactive interfaces
+                    if (iface.isLoopback() || !iface.isUp())
+                        continue;
+
+                    Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                    while (addresses.hasMoreElements()) {
+                        InetAddress addr = addresses.nextElement();
+                        host = addr.getLocalHost();
+                    }
+                }
+            }
+
             this.server = new ServerSocket(22, 0, host);
             System.out.println("Server has started in " + server.getInetAddress().getHostAddress() + " in port: "
                     + server.getLocalPort());
