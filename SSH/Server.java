@@ -57,7 +57,7 @@ public class Server implements Serializable {
                     Enumeration<InetAddress> addresses = iface.getInetAddresses();
                     while (addresses.hasMoreElements()) {
                         InetAddress addr = addresses.nextElement();
-                        host = addr.getLocalHost();
+                        host = addr.getByName("enp0s3");
                     }
                 }
             }
