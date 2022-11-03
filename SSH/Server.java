@@ -30,37 +30,42 @@ public class Server implements Serializable {
     private DataInputStream in;
     private DataOutputStream out;
     private InetAddress host;
-    private ArrayList<User> users = new ArrayList<User>();
-    private ArrayList<Group> groups = new ArrayList<Group>();
-    private ArrayList<Folder> folders = new ArrayList<Folder>();
+    public ArrayList<User> users = new ArrayList<User>();
+    public ArrayList<Group> groups = new ArrayList<Group>();
+    public ArrayList<Folder> folders = new ArrayList<Folder>();
     private User user;
 
-    public Server(ArrayList<User> users) {
+    public Server(ArrayList<User> users, ArrayList<Group> groups, ArrayList<Folder> folders) {
         this.users = users;
-        client = new Client();
-        this.users = users;
+        this.groups = groups;
+        this.folders = folders;
+        client = new Client(false);
         try {
             host = InetAddress.getLocalHost();
             this.server = new ServerSocket(22, 0, host);
             System.out.println("Server has started in " + server.getInetAddress().getHostAddress() + " in port: "
                     + server.getLocalPort());
+            System.out.println("Running server in " + System.getProperty("os.name"));
+            System.out.println("Java version: " + System.getProperty("java.version"));
             for (;;) {
-
                 this.client.setClient(this.server.accept());
-                System.out.println("Client on " + this.client.getClient().getInetAddress().getHostAddress() + "@"
-                        + this.client.getClient().getInetAddress().getHostName());
-                this.setIn(new DataInputStream(new BufferedInputStream(this.client.getClient().getInputStream())));
-                this.setOut(new DataOutputStream(this.client.getClient().getOutputStream()));
+                if (!this.client.getClient().isClosed()) {
+                    sendInfo(this.client.getClient());
+                    reciveUser(this.client.getClient());
+                }
 
-                this.login(this.getIn());
-                if (this.getUser() != null) {
-                    this.sendUserClient(this.getOut());
+                System.out.println("Client: " + this.getUser().getUserName() + " on "
+                        + this.client.getClient().getInetAddress().getHostAddress() + "@"
+                        + this.client.getClient().getInetAddress().getHostName());
+
+                if (!this.client.getClient().isClosed()) {
+                    this.recieveInfo(this.client.getClient());
                 }
 
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("...");
 
         }
     }
@@ -155,43 +160,6 @@ public class Server implements Serializable {
         this.folders = folders;
     }
 
-    public void login(DataInputStream in) {
-        try {
-            this.setIn(in);
-            String user, pass;
-            int pos = 0;
-            user = this.getIn().readUTF();
-            pass = this.getIn().readUTF();
-            pos = getPosAccount(user, pass);
-            if (pos != -1) {
-                System.out.println(this.getUsers().get(pos).getUserName() + " in "
-                        + this.client.getClient().getInetAddress().getHostAddress());
-                this.setUser(this.getUsers().get(pos));
-            }
-
-        } catch (IOException ex) {
-            System.out.println(ex.toString());
-
-        }
-    }
-
-    public void sendUserClient(DataOutputStream out) {
-        if (user != null) {
-            try {
-                this.setOut(out);
-                this.getOut().writeUTF(this.getUser().getUserName());
-                this.getOut().flush();
-                this.getOut().writeUTF(this.getUser().getPass());
-                this.getOut().flush();
-                this.getOut().writeUTF(this.getUser().getRol());
-                this.getOut().flush();
-                this.getOut().close();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
-
     public int getPosAccount(String username, String pass) {
         int pos = -1;
         for (int i = 0; i < this.getUsers().size(); i++) {
@@ -204,4 +172,71 @@ public class Server implements Serializable {
         return pos;
     }
 
+    public void sendInfo(Socket c) {
+        try {
+            this.setObout(new ObjectOutputStream(c.getOutputStream()));
+            this.getObout().writeObject(this.users);
+            this.getObout().flush();
+
+            this.setObout(new ObjectOutputStream(c.getOutputStream()));
+            this.getObout().writeObject(this.groups);
+
+            this.getObout().flush();
+
+            this.setObout(new ObjectOutputStream(c.getOutputStream()));
+            this.getObout().writeObject(this.folders);
+            this.getObout().flush();
+        } catch (IOException e) {
+            System.out.println("Client isn't connected now");
+        }
+    }
+
+    public void recieveInfo(Socket c) {
+        try {
+            if (!c.isClosed()) {
+                this.setObin(new ObjectInputStream(c.getInputStream()));
+                this.users = (ArrayList<User>) this.getObin().readObject();
+                this.setObin(new ObjectInputStream(c.getInputStream()));
+                this.groups = (ArrayList<Group>) this.getObin().readObject();
+                this.setObin(new ObjectInputStream(c.getInputStream()));
+                this.folders = (ArrayList<Folder>) this.getObin().readObject();
+
+                for (int i = 0; i < users.size(); i++) {
+                    System.out.println(users.get(i).toString());
+                }
+
+                for (int i = 0; i < groups.size(); i++) {
+                    System.out.println(groups.get(i).toString());
+                }
+
+                for (int i = 0; i < folders.size(); i++) {
+                    char permissions[] = folders.get(i).getPermissions();
+                    System.out.print("Name: " + folders.get(i).getName() + "; permissions: ");
+                    for (int j = 0; j < permissions.length; j++) {
+                        System.out.print(permissions[j] + " ");
+                    }
+                    System.out.print(";Group: " + folders.get(i).getGroup().getName() + "; Owner: "
+                            + folders.get(i).getOwn().getUserName());
+                    System.out.print("\n");
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Client isn't connected now");
+        }
+
+        catch (ClassNotFoundException a) {
+            System.out.println("Client isn't connected now");
+        }
+    }
+
+    public void reciveUser(Socket c) {
+        try {
+            this.setObin(new ObjectInputStream(c.getInputStream()));
+            this.setUser((User) this.getObin().readObject());
+        } catch (IOException ex) {
+            System.out.println("...");
+        } catch (ClassNotFoundException ex) {
+            System.out.println("...");
+        }
+    }
 }

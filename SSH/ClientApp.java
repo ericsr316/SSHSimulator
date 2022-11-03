@@ -1,72 +1,64 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.Serializable;
 import java.util.Scanner;
-
-import javax.swing.SpinnerDateModel;
-
 import java.util.ArrayList;
 
 /**
  *
  * @author ericm
  */
-public class ClientApp {
+public class ClientApp implements Serializable {
     private static Scanner sc = new Scanner(System.in);
     public static ArrayList<User> users = new ArrayList<User>();
     public static ArrayList<Folder> folders = new ArrayList<Folder>();
     public static ArrayList<Group> groups = new ArrayList<Group>();
     private static Client client;
+    public static boolean x = false;
 
-    public static void main(String args[]) throws ClassNotFoundException, IOException {
-        client = new Client();
-        System.out.print("Type IP ADDRESS: ");
-        client.setIp(sc.next());
+    public static void main(String args[]) {
+
+        client = new Client(x);
+        client.setIp(args[0]);
         client.setPort(22);
-        System.out.print("Type your credentials\nType your username: ");
-        client.setUserName(sc.next());
-        System.out.print("Type your password: ");
-        client.setPass(String.valueOf(sc.next().hashCode()));
-        client.connectToServer();
-        fillGroups();
-        fillFolders();
+        client.setUserName(args[1]);
+        client.setPass(String.valueOf(args[2].hashCode()));
+
         for (;;) {
+            client.connectToServer();
+            System.out.println("*******All commands aviable*****");
+            System.out.println("*       echo - print a message *");
+            System.out.println("*ifconfig - show network ip    *");
+            System.out.println("*adduser - add a new user      *");
+            System.out.println("*allusers - show all the users aviable (only for root)*");
+            System.out.println("*****exit - left the system******");
+            client.x = false;
+            users = client.users;
+            groups = client.groups;
+            folders = client.folder;
+
+            for (int i = 0; i < folders.size(); i++) {
+                char permissions[] = folders.get(i).getPermissions();
+                System.out.print("Name: " + folders.get(i).getName() + "; permissions: ");
+                for (int j = 0; j < permissions.length; j++) {
+                    System.out.print(permissions[j] + " ");
+                }
+                System.out.print(";Group: " + folders.get(i).getGroup().getName() + "; Owner: "
+                        + folders.get(i).getOwn().getUserName());
+                System.out.print("\n");
+            }
+
             execution(client);
+
         }
-    }
-
-    public static void fillGroups() {
-        ArrayList<User> usuariosSystems = new ArrayList<User>();
-        usuariosSystems.add(client.getUser());
-        groups.add(new Group("System", usuariosSystems));
-        usuariosSystems.clear();
-
-    }
-
-    public static void fillFolders() {
-        char[] permissions = { 'r', 'w', 'x' };
-        User u;
-        if (client.getUser().getUserName().equals("root")) {
-            u = client.getUser();
-        } else {
-            u = new User("root", "12345");
-            u.setRol("root");
-        }
-
-        folders.add(new Folder("lib", permissions, u, groups.get(0)));
-        folders.add(new Folder("opt", permissions, u, groups.get(0)));
-        folders.add(new Folder("usr", permissions, u, groups.get(0)));
-        folders.add(new Folder("home", permissions, u, groups.get(0)));
-        folders.add(new Folder("mnt", permissions, u, groups.get(0)));
-        folders.add(new Folder("var", permissions, u, groups.get(0)));
-        folders.add(new Folder("bin", permissions, u, groups.get(0)));
-        folders.add(new Folder("boot", permissions, u, groups.get(0)));
     }
 
     public static void execution(Client c) {
         String command = "";
 
-        System.out.print(c.getClient().getInetAddress() + "@" + c.getUser().getUserName() + "~#");
+        System.out.print(c.getClient().getInetAddress().getHostName() + "@" + c.getUser().getUserName() + "~#");
         command = sc.next();
+
         switch (command) {
             case "ifconfig": {
                 ifConfig(c);
@@ -80,33 +72,22 @@ public class ClientApp {
                 echo();
                 break;
             }
-            case "ls": {
-                ls();
-                break;
-            }
-
-            case "lall": {
-                lall();
-                break;
-            }
 
             case "adduser": {
                 addUser();
-                break;
-            }
-
-            case "su": {
-                su();
+                c.x = true;
                 break;
             }
 
             case "mkdir": {
                 mkdir(c);
+                c.x = true;
                 break;
             }
 
             case "allusers": {
                 allUsers(c);
+                c.x = true;
                 break;
             }
 
@@ -114,6 +95,13 @@ public class ClientApp {
                 help();
                 break;
             }
+
+            default: {
+                System.out.println("Command not found");
+            }
+        }
+        if (c.x) {
+            c.sendInfo();
         }
     }
 
@@ -125,12 +113,9 @@ public class ClientApp {
 
     public static void exitServer(Client c) {
         System.out.println("Exiting...");
-        try {
-            c.disconnectFromServer();
-        } catch (IOException e) {
-            System.out.println("Something is wrong");
-            e.printStackTrace();
-        }
+
+        c.disconnectFromServer();
+
         System.exit(1);
     }
 
@@ -139,23 +124,11 @@ public class ClientApp {
     }
 
     public static void ls() {
+        System.out.println(folders.size());
         for (int i = 0; i < folders.size(); i++) {
-            System.out.print("/" + folders.get(i).getName() + " ");
+            System.out.println("/" + folders.get(i).getName() + " ");
         }
         System.out.print("\n");
-    }
-
-    public static void lall() {
-        for (int i = 0; i < folders.size(); i++) {
-            char permissions[] = folders.get(i).getPermissions();
-            System.out.print("Name: " + folders.get(i).getName() + "; permissions: ");
-            for (int j = 0; j < permissions.length; j++) {
-                System.out.print(permissions[j] + " ");
-            }
-            System.out.print(";Group: " + folders.get(i).getGroup().getName() + "; Owner: "
-                    + folders.get(i).getOwn().getUserName());
-            System.out.print("\n");
-        }
     }
 
     public static void addUser() {
@@ -180,24 +153,26 @@ public class ClientApp {
 
     }
 
-    public static void su() {
-        String usu;
-        String pass;
-        System.out.print("su: ");
-        usu = sc.next();
-        for (int i = 0; i < users.size(); i++) {
-            if (usu.equals(users.get(i).getUserName())) {
-                System.out.print("Type your password: ");
-                pass = String.valueOf(sc.next().hashCode());
-                if (pass.equals(users.get(i).getPass())) {
-                    System.out.println("Goodbye " + client.getUserName() + " see u later");
-                    client.setUser(users.get(i));
-                    break;
-                }
-            }
-        }
-    }
-
+    /*
+     * public static void su() {
+     * String usu;
+     * String pass;
+     * System.out.print("su: ");
+     * usu = sc.next();
+     * for (int i = 0; i < users.size(); i++) {
+     * if (usu.equals(users.get(i).getUserName())) {
+     * System.out.print("Type your password: ");
+     * pass = String.valueOf(sc.next().hashCode());
+     * if (pass.equals(users.get(i).getPass())) {
+     * System.out.println("Goodbye " + client.getUserName() + " see u later");
+     * client.setUser(users.get(i));
+     * client.sendUser();
+     * break;
+     * }
+     * }
+     * }
+     * }
+     */
     public static void allUsers(Client c) {
         if (c.getUser().getRol().equals("root")) {
             for (int i = 0; i < users.size(); i++) {
@@ -212,13 +187,7 @@ public class ClientApp {
     }
 
     public static void help() {
-        System.out.println("All commands aviable");
-        System.out.println("ls - list all folders");
-        System.out.println("lall - list all folders with its information");
-        System.out.println("echo - print a message");
-        System.out.println("ifconfig - show network ip");
-        System.out.println("adduser - add a new user");
-        System.out.println("exit - left the system");
+
     }
 
 }

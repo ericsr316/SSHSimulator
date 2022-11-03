@@ -1,6 +1,8 @@
 import java.io.Serializable;
+import java.util.Arrays;
 
 public class Folder implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String name;
     private char[] permissions;
     private User own;
@@ -45,6 +47,13 @@ public class Folder implements Serializable {
 
     public void setGroup(Group group) {
         this.group = group;
+    }
+
+    @Override
+    public String toString() {
+        return "Folder [name=" + name + ", permissions=" + Arrays.toString(permissions) + ", own=" + own.toString()
+                + ", group="
+                + group.toString() + "]";
     }
 
 }

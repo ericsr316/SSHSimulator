@@ -9,6 +9,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -19,7 +20,7 @@ import java.util.logging.Logger;
  *
  * @author ericm
  */
-public class Client {
+public class Client implements Serializable {
 
     private Socket client;
     private String ip;
@@ -32,8 +33,13 @@ public class Client {
     private String pass;
     private User user;
     public Scanner sc = new Scanner(System.in);
+    public ArrayList<User> users;
+    public ArrayList<Group> groups;
+    public ArrayList<Folder> folder;
+    public boolean x = false;
 
-    public Client() {
+    public Client(boolean x) {
+        this.x = x;
         this.user = null;
 
     }
@@ -41,19 +47,24 @@ public class Client {
     public void connectToServer() {
 
         try {
+
             client = new Socket(ip, port);
+            getInfo();
             typeCredentials();
-            this.user = this.reciveUser();
+
         } catch (IOException ex) {
-            System.out.println(ex.getMessage());
+            System.out.println("...");
         }
 
     }
 
-    public void disconnectFromServer() throws IOException {
-
-        if (this.getClient().isConnected()) {
-            this.getClient().close();
+    public void disconnectFromServer() {
+        try {
+            if (this.getClient().isConnected()) {
+                this.getClient().close();
+            }
+        } catch (IOException e) {
+            System.out.println("...");
         }
 
     }
@@ -132,31 +143,17 @@ public class Client {
 
     public void typeCredentials() {
 
-        try {
-            this.setOut(new DataOutputStream(client.getOutputStream()));
-            this.getOut().writeUTF(this.getUserName());
-            this.getOut().flush();
-            this.getOut().writeUTF(this.getPass());
-            this.getOut().flush();
-
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    public User reciveUser() throws IOException {
-        User x = new User();
-        try {
-            this.setIn(new DataInputStream(new BufferedInputStream(this.client.getInputStream())));
-            x.setUserName(this.getIn().readUTF());
-            x.setPass(this.getIn().readUTF());
-            x.setRol(this.getIn().readUTF());
-
-        } catch (IOException ex) {
-            ex.printStackTrace();
+        for (int i = 0; i < users.size(); i++) {
+            if (this.getUserName().equals(users.get(i).getUserName()) &&
+                    this.getPass().equals(users.get(i).getPass())) {
+                System.out.println("User found!");
+                User z = users.get(i);
+                this.setUser(z);
+                sendUser();
+                break;
+            }
         }
 
-        return x;
     }
 
     public User getUser() {
@@ -165,6 +162,54 @@ public class Client {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public void getInfo() {
+        try {
+            this.setObin(new ObjectInputStream(this.getClient().getInputStream()));
+            this.users = (ArrayList<User>) this.getObin().readObject();
+            this.setObin(new ObjectInputStream(this.getClient().getInputStream()));
+            this.groups = (ArrayList<Group>) this.getObin().readObject();
+            this.setObin(new ObjectInputStream(this.getClient().getInputStream()));
+            this.folder = (ArrayList<Folder>) this.getObin().readObject();
+        } catch (IOException e) {
+            System.out.println("...");
+        }
+
+        catch (ClassNotFoundException f) {
+            System.out.println("...");
+        }
+    }
+
+    public void sendInfo() {
+        try {
+
+            System.out.println("sending...");
+
+            this.setObout(new ObjectOutputStream(this.client.getOutputStream()));
+            this.getObout().writeObject(this.users);
+            this.getObout().flush();
+
+            this.setObout(new ObjectOutputStream(this.client.getOutputStream()));
+            this.getObout().writeObject(this.groups);
+            this.getObout().flush();
+
+            this.setObout(new ObjectOutputStream(this.client.getOutputStream()));
+            this.getObout().writeObject(this.folder);
+            this.getObout().flush();
+        } catch (IOException ex) {
+            System.out.println("...");
+        }
+    }
+
+    public void sendUser() {
+        try {
+            this.setObout(new ObjectOutputStream(this.client.getOutputStream()));
+            this.getObout().writeObject(this.getUser());
+            this.getObout().flush();
+        } catch (IOException ex) {
+            System.out.println("...");
+        }
     }
 
 }
